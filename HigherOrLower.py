@@ -50,6 +50,15 @@ class Deck:
         print("Shuffling...")
         random.shuffle(self.deck)
         time.sleep(1)
+
+    def showTopCard(self):
+        print("Revealing card...")
+        time.sleep(1)
+        print(f"The revealed card is the {self.deck[0].number} of {self.deck[0].suit}!")
+        self.deck.pop(0)
+
+    def getTopCard(self):
+        return self.deck[0]
     
 
 jokers = True
@@ -91,9 +100,11 @@ def printSettings():
     
 def showRules():
     print("The goal of this game is to guess whether the next card to be shown from the deck will be higher or lower than the current card thats shown. After each guess the card will be revealed.")
+    global rounds
+    while not (rounds > 0 and rounds < 20):
+        rounds = int(input("How many rounds would you like to play? (1-20) ")) 
     printSettings()
     
-deck = Deck(settings[0], settings[1], settings[2])
 
 
 def showDeck():
@@ -101,6 +112,43 @@ def showDeck():
         print(f"{card.number} of {card.suit}")
 
 
+
+def playRound(roundNum):
+    global last_value 
+    global points
+    print("--------------------")
+    print(f"Round {roundNum}:")
+    HigherOrLower = input("Guess if the next card to be revealed will be Higher or Lower: ").upper()
+    winner = True if HigherOrLower == "HIGHER" and deck.getTopCard().value > last_value or HigherOrLower == "LOWER" and deck.getTopCard().value < last_value else False
+    drawer = True if deck.getTopCard().value == last_value else False
+    last_value = deck.getTopCard().value
+    deck.showTopCard()
+    if drawer:
+        print("You got lucky this round!")
+        points += 1
+    elif winner:
+        print("Well done! You got it right!")
+        points += 1
+    else:
+        print("Better luck next time!")
+
+def endGame():
+    print(f"That's all of the rounds done! You got {points}/{rounds} points")
+    if points/rounds > 0.7:
+        print("Congratulations you played very well! Hope you enjoyed!")
+    elif points/rounds > 0.4:
+        print("Okay...Decent score, maybe you can get more if you go again...")
+    else:
+        print("Oh no...You need to practice. For your sake, I'm going to assume you don't understand the rules. Play again!")
+
+
+
+
+
+
+    
+rounds = 0
+deck = Deck(settings[0], settings[1], settings[2])
 print("Welcome to Daniel's Higher/Lower Game!")
 time.sleep(0.5)
 showRules()
@@ -112,10 +160,21 @@ print("2")
 time.sleep(1)
 print("1")
 
-
-
+points = 0
 
 deck.shuffle()
-showDeck()
+last_value = deck.getTopCard().value
+deck.showTopCard()
+
+
+    
+
+
+
+for i in range(rounds):
+    playRound(i+1)
+
+endGame()
+# showDeck()
             
 
