@@ -51,9 +51,7 @@ class Deck:
             self.deck.append(Card('joker', 'black', aceIsEleven, kingsValueMorethan10))
     
     def shuffle(self):
-        print("Shuffling...")
         random.shuffle(self.deck)
-        time.sleep(1)
 
     def popTopCard(self):
         self.deck.pop(0)
@@ -63,7 +61,6 @@ class Deck:
 
 
 def change_cursor(event):
-    global jokersTextOption
     canvas.config(cursor="hand2")  # Change cursor to a pointing hand
 
 def reset_cursor(event):
@@ -74,10 +71,10 @@ def reset_cursor(event):
 
 def printSettings():
     setitingsStartWidth = 250
+    global jokersTextOption, aceTextOption, kingsValueOption
 
 
-    def makeSettingChanges(jokersTextOption, aceTextOption, kingsValueOption):
-        canvas.pack() 
+    def makeSettingChanges():
 
         if settings[0]:
             canvas.itemconfig(jokersTextOption, text="There are jokers in the deck.")
@@ -99,14 +96,10 @@ def printSettings():
 
 
 
-    def makeChanges(i, jokersTextOption, aceTextOption, kingsValueOption):
+    def makeChanges(i):
         global settings
-        print(f"Old values {settings[0]}, {settings[1]}, {settings[2]} )")
         settings[i] = not settings[i]
-        print(f"New values {settings[0]}, {settings[1]}, {settings[2]} )")
-        makeSettingChanges(jokersTextOption, aceTextOption, kingsValueOption)
-
-    canvas.pack()
+        makeSettingChanges()
 
     settingsIntro = canvas.create_text(25,200, text="Here are the current settings(click to change):", anchor="w",fill="white",font=font.Font(family="Arial", size=15, underline=True))
 
@@ -114,7 +107,7 @@ def printSettings():
     jokersTextOption = canvas.create_text(25,setitingsStartWidth, text="There are jokers in the deck.", anchor="w",fill="white",font=("Arial", 15))
     aceTextOption = canvas.create_text(25,setitingsStartWidth + 50, text="The value of the Ace is 11.", anchor="w",fill="white",font=("Arial", 15))
     kingsValueOption = canvas.create_text(25,setitingsStartWidth + 100, text="The Jack, Queen and King are of values 11, 12 and 13 respectively.", anchor="w",fill="white",font=("Arial", 15))
-    makeSettingChanges(jokersTextOption, aceTextOption, kingsValueOption)
+    makeSettingChanges()
 
     canvas.tag_bind(jokersTextOption, "<Enter>", change_cursor)
     canvas.tag_bind(jokersTextOption, "<Leave>", reset_cursor)
@@ -127,30 +120,11 @@ def printSettings():
     canvas.tag_bind(kingsValueOption, "<Enter>", change_cursor)
     canvas.tag_bind(kingsValueOption, "<Leave>", reset_cursor)
 
-    canvas.tag_bind(jokersTextOption, "<Button-1>", lambda event: makeChanges(0, jokersTextOption, aceTextOption, kingsValueOption))
+    canvas.tag_bind(jokersTextOption, "<Button-1>", lambda event: makeChanges(0))
 
-    canvas.tag_bind(aceTextOption, "<Button-1>", lambda event: makeChanges(1, jokersTextOption, aceTextOption, kingsValueOption))
+    canvas.tag_bind(aceTextOption, "<Button-1>", lambda event: makeChanges(1))
 
-    canvas.tag_bind(kingsValueOption, "<Button-1>", lambda event: makeChanges(2, jokersTextOption, aceTextOption, kingsValueOption))
-
-    
-
-
- 
-    
-
-
-    
-
-
-def showDeck():
-    for card in deck.deck:
-        print(f"{card.number} of {card.suit}")
-
-
-
-
-
+    canvas.tag_bind(kingsValueOption, "<Button-1>", lambda event: makeChanges(2))
 
 
 def showRules():
@@ -158,8 +132,6 @@ def showRules():
     canvas.pack()
     introText = canvas.create_text(width/2,25, text="Welcome to Daniel's Higher/Lower Game!", anchor="center",fill="white",font=("Arial", 20))
     rulestext = canvas.create_text(width/2,100, text="The goal of this game is to guess whether the next card to be shown from the deck will be higher or lower than the current card that's shown. After each guess the card will be revealed.", anchor="center",fill="white",font=("Arial", 15), width=width) 
-    # while not (rounds > 0 and rounds < 20):
-    #     rounds = int(input("How many rounds would you like to play? (1-20) ")) 
     printSettings()
 
 
@@ -180,9 +152,6 @@ def configureWindow(width, height):
     
 configureWindow(width, height)
 
-
-
-#Creating a canvas
 canvas = Canvas(window, bg="black", width=width, height=height)
 settings = [True, True,True] #First is True if we have jokers, second if the ace is value 11, third if kings value is not 13
 points = 0
@@ -206,11 +175,18 @@ def doBuildup():
             canvas.after(1000, update_countdown, i - 2)  # Call update_countdown again after 1 second
         elif i == -1:
             canvas.delete(lets_go_text)
+            global deck
+
+            deck = Deck(settings[0], settings[1], settings[2])
+            setUpGame(deck)
+
         else:
             canvas.itemconfig(lets_go_text, text=f"{i+1}")
             canvas.after(1000, update_countdown, i - 1)  # Call update_countdown again after 1 second
 
     update_countdown(countdown+1)  # Start the countdown from 3
+
+
 
 
 def getCardDimensions(max_height):
@@ -228,8 +204,9 @@ def create_back_card():
 
     getCardDimensions(height*5/8)
 
+    const = 1.05
     image = Image.open("back_card.png")
-    scaled_image = image.resize(front_card_dimensions, Image.Resampling.LANCZOS)
+    scaled_image = image.resize((int(front_card_dimensions[0]*const), int(front_card_dimensions[1]*const)), Image.Resampling.LANCZOS)
     back_card_photoimage = ImageTk.PhotoImage(scaled_image)
     window.back_card_photoimage = back_card_photoimage
     back_card = canvas.create_image(width*2/3, height/2, image=back_card_photoimage)
@@ -262,8 +239,7 @@ def flipCard():
     present_card()
 
 def updatePoints():
-    global points
-    global points_text
+    global points, points_text
     points += 1
     canvas.itemconfig(points_text, text=f"Points: {points}")
 
@@ -276,19 +252,13 @@ def getEndGameText():
         return "For your sake, I really hope you don't understand the rules."
 
 def updateRound():
-    global _round
-    global round_text
+    global _round, round_text
     if _round != rounds:
         _round += 1
         canvas.itemconfig(round_text, text=f"Round: {_round}/{rounds}")
     else:
         canvas.create_text(width/2, 20, text=f"That's all of the rounds done! You got {points}/{rounds} points", font=("Arial", 20), fill="white", anchor="n")
-        canvas.delete(points_text)
-        canvas.delete(round_text)
-        canvas.delete(higher_button)
-        canvas.delete(lower_button)
-        canvas.delete(lower_text)
-        canvas.delete(higher_text)
+        canvas.delete(points_text, round_text, higher_button, lower_button, lower_text, higher_text)
         reset_cursor(0)
         canvas.itemconfig(bottom_text, text=getEndGameText())
 
@@ -300,8 +270,6 @@ def handleUserGuess(userGuessIsHigher):
     old_top_card = deck.getTopCard()
     flipCard()
     new_top_card = deck.getTopCard()
-
-    # HigherOrLower = input("Guess if the next card to be revealed will be Higher or Lower: ").upper()
 
     winner = True if userGuessIsHigher and new_top_card.value > old_top_card.value or not userGuessIsHigher and new_top_card.value < old_top_card.value else False
     drawer = True if new_top_card.value == old_top_card.value else False
@@ -323,14 +291,14 @@ def handleUserGuess(userGuessIsHigher):
 
 def createHigherAndLowerButtons(back_card_location):
     global higher_button, lower_button, higher_text, lower_text
-    buttonx, buttony = back_card_location
+    button_x, button_y = back_card_location
     x_increase = 50
     y_decrease = 300
     y_offset = 70
-    x1 = (buttonx - back_card_dimensions_fixed[0] / 2) + x_increase/2
-    y1 = (buttony - back_card_dimensions_fixed[1] / 2) + (y_decrease/2) - y_offset
-    x2 = (buttonx + back_card_dimensions_fixed[0] / 2) - x_increase/2
-    y2 = (buttony + back_card_dimensions_fixed[1] / 2) - (y_decrease/2) - y_offset
+    x1 = (button_x - back_card_dimensions_fixed[0] / 2) + x_increase/2
+    y1 = (button_y - back_card_dimensions_fixed[1] / 2) + (y_decrease/2) - y_offset
+    x2 = (button_x + back_card_dimensions_fixed[0] / 2) - x_increase/2
+    y2 = (button_y + back_card_dimensions_fixed[1] / 2) - (y_decrease/2) - y_offset
 
     higher_button = canvas.create_rectangle(x1, y1, x2, y2, fill="black", outline="white")
 
@@ -380,12 +348,10 @@ def create_bottom_text():
     bottom_text = canvas.create_text(width/2, height*11/12, text="", font=("Arial", 20), fill="white")
 
 def create_points_text():
-    global points
     global points_text
     points_text = canvas.create_text(10, 10, text="Points: 0",anchor="nw",font=("Arial", 20), fill="white")
 
 def create_round_text():
-    global _round
     global round_text
     round_text = canvas.create_text(width-10, 10, text=f"Round: {_round}/{rounds}",anchor="ne",font=("Arial", 20), fill="white")
 
@@ -394,9 +360,7 @@ def create_round_text():
 
 
 def setUpGame(deck):
-    global back_card_dimensions_fixed
-    global rounds
-    global _round
+    global back_card_dimensions_fixed, rounds, _round
     rounds = 10
     _round = 1
 
@@ -411,26 +375,12 @@ def setUpGame(deck):
 
 
 def play():
-    global deck
     canvas.delete("all")
-
-    # doBuildup()
-    deck = Deck(settings[0], settings[1], settings[2])
-    setUpGame(deck)
-
-
-
+    doBuildup()
 
 
 showRules()
 window.protocol("WM_DELETE_WINDOW", on_closing)
-
-
-
-
-
-
-
 
 
 
@@ -460,37 +410,7 @@ canvas.tag_bind(play_button, "<Leave>", reset_cursor)
 
 canvas.pack()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 window.mainloop() 
 
 
-last_value = deck.getTopCard().value
-deck.popTopCard()
-
-
-    
-
-
-
-for i in range(rounds):
-    playRound(i+1)
-
-endGame()
-
-
-# showDeck()
-            
 
