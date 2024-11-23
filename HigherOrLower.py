@@ -262,6 +262,11 @@ def updateRound():
         reset_cursor(0)
         canvas.itemconfig(bottom_text, text=getEndGameText())
 
+def handleGetJoker():
+    flipCard()
+    canvas.itemconfig(bottom_text, text="")
+    updateRound()
+
 
 def handleUserGuess(userGuessIsHigher):
     global points
@@ -271,19 +276,25 @@ def handleUserGuess(userGuessIsHigher):
     flipCard()
     new_top_card = deck.getTopCard()
 
-    winner = True if userGuessIsHigher and new_top_card.value > old_top_card.value or not userGuessIsHigher and new_top_card.value < old_top_card.value else False
-    drawer = True if new_top_card.value == old_top_card.value else False
+    if new_top_card.number == "joker":
+        canvas.itemconfig(bottom_text, text="Joker means you lose this round!")
+        canvas.after(5000, lambda: handleGetJoker())
 
-    if drawer:
-        canvas.itemconfig(bottom_text, text="You got lucky this round!")
-        updatePoints()
-    elif winner:
-        canvas.itemconfig(bottom_text, text="Well done! You got it right!")
-        updatePoints()
     else:
-        canvas.itemconfig(bottom_text, text="Better luck next time!")
 
-    updateRound()
+        winner = True if userGuessIsHigher and new_top_card.value > old_top_card.value or not userGuessIsHigher and new_top_card.value < old_top_card.value else False
+        drawer = True if new_top_card.value == old_top_card.value else False
+
+        if drawer:
+            canvas.itemconfig(bottom_text, text="You got lucky this round!")
+            updatePoints()
+        elif winner:
+            canvas.itemconfig(bottom_text, text="Well done! You got it right!")
+            updatePoints()
+        else:
+            canvas.itemconfig(bottom_text, text="Better luck next time!")
+
+        updateRound()
 
 
 
@@ -361,7 +372,7 @@ def create_round_text():
 
 def setUpGame(deck):
     global back_card_dimensions_fixed, rounds, _round
-    rounds = 10
+    rounds = 100
     _round = 1
 
     back_card_dimensions_fixed, back_card_location = create_back_card()
