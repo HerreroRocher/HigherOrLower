@@ -11,15 +11,15 @@ class Card:
     
     def generateValues(self, aceIsEleven, kingsValueMorethan10):
 
-            if self.number == 'Ace':
+            if self.number == 'ace':
                 self.value = 11 if aceIsEleven else 1
-            elif self.number == 'Jack':
+            elif self.number == 'jack':
                 self.value = 11 if kingsValueMorethan10 else 10
-            elif self.number == 'Queen':
+            elif self.number == 'queen':
                 self.value = 12 if kingsValueMorethan10 else 10
-            elif self.number == 'King':
+            elif self.number == 'king':
                 self.value = 13 if kingsValueMorethan10 else 10
-            elif self.number == 'Joker':
+            elif self.number == 'joker':
                 self.value = 0
             else:
                 self.value = int(self.number)
@@ -30,25 +30,25 @@ class Card:
 class Deck:
     def __init__(self, jokers, aceIsEleven, kingsValueMorethan10):
         self.deck = []
-        suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
+        suits = ['hearts', 'diamonds', 'clubs', 'spades']
         for i in range(4):
             suit = suits[i]
             for i in range(1,14):
                 if i == 1:
-                    number = 'Ace'
+                    number = 'ace'
                 elif i == 11:
-                    number = 'Jack'
+                    number = 'jack'
                 elif i == 12:
-                    number = 'Queen'
+                    number = 'queen'
                 elif i == 13:
-                    number = 'King'
+                    number = 'king'
                 else:
                     number = i
                 self.deck.append(Card(number,suit, aceIsEleven, kingsValueMorethan10))
 
         if jokers:
-            self.deck.append(Card('Joker', 'Red', aceIsEleven, kingsValueMorethan10))
-            self.deck.append(Card('Joker', 'Black', aceIsEleven, kingsValueMorethan10))
+            self.deck.append(Card('joker', 'Red', aceIsEleven, kingsValueMorethan10))
+            self.deck.append(Card('joker', 'Black', aceIsEleven, kingsValueMorethan10))
     
     def shuffle(self):
         print("Shuffling...")
@@ -152,25 +152,6 @@ def showDeck():
 
 
 
-def playRound(roundNum):
-    global last_value 
-    global points
-    print("--------------------")
-    print(f"Round {roundNum}:")
-    HigherOrLower = input("Guess if the next card to be revealed will be Higher or Lower: ").upper()
-    winner = True if HigherOrLower == "HIGHER" and deck.getTopCard().value > last_value or HigherOrLower == "LOWER" and deck.getTopCard().value < last_value else False
-    drawer = True if deck.getTopCard().value == last_value else False
-    last_value = deck.getTopCard().value
-    deck.showTopCard()
-    if drawer:
-        print("You got lucky this round!")
-        points += 1
-    elif winner:
-        print("Well done! You got it right!")
-        points += 1
-    else:
-        print("Better luck next time!")
-
 def endGame():
     print(f"That's all of the rounds done! You got {points}/{rounds} points")
     if points/rounds > 0.7:
@@ -245,34 +226,137 @@ def doBuildup():
     update_countdown(countdown+1)  # Start the countdown from 3
 
 
+def getCardDimensions(max_height):
+    global front_card_dimensions
+    image = Image.open("Playing Cards/2_of_diamonds.png") 
+    original_width, original_height = image.size
+    new_height = int(max_height)
+    new_width = int((max_height / original_height) * original_width)
 
+    front_card_dimensions = (new_width, new_height)
+
+
+def create_back_card():
+    global front_card_dimensions
+
+    getCardDimensions(height*5/8)
+
+    image = Image.open("back_card.png")
+    scaled_image = image.resize(front_card_dimensions, Image.Resampling.LANCZOS)
+    back_card_photoimage = ImageTk.PhotoImage(scaled_image)
+    window.back_card_photoimage = back_card_photoimage
+    back_card = canvas.create_image(width*2/3, height/2, image=back_card_photoimage)
+
+    height_error = 20
+
+    return (front_card_dimensions[0], front_card_dimensions[1]-height_error), (width*2/3, height/2)
+
+def shuffle_deck(deck):
+    shuffle_text = canvas.create_text(width*2/3, height/2, text="Shuffling...", anchor="center",fill="gray",font=font.Font(family="Arial", size=20))
+    canvas.after(1000, lambda: (canvas.delete(shuffle_text), deck.shuffle()))
+
+
+def present_card(deck):
+
+    top_card_inst = deck.getTopCard()
+    top_card_image_path = "Playing Cards/" + str(top_card_inst.number) + "_of_" + top_card_inst.suit + ".png"
+    image = Image.open(top_card_image_path)
+    scaled_image = image.resize(front_card_dimensions, Image.Resampling.LANCZOS)
+    top_card_image = ImageTk.PhotoImage(scaled_image)
+    window.top_card_image = top_card_image
+    top_card = canvas.create_image(width/3, height/2, image=top_card_image)
+
+
+
+
+
+def handleUserGuess(userGuessIsHigher):
+    global points
+
+
+    old_top_card = deck.getTopCard()
+    flipCard()
+    new_top_card = deck.getTopCard()
+
+    # HigherOrLower = input("Guess if the next card to be revealed will be Higher or Lower: ").upper()
+
+    winner = True if userGuessIsHigher and new_top_card.value > old_top_card.value or not userGuessIsHigher and new_top_card.value < old_top_card.value else False
+    drawer = True if new_top_card.value == old_top_card.value else False
+
+    if drawer:
+        print("You got lucky this round!")
+        points += 1
+    elif winner:
+        print("Well done! You got it right!")
+        points += 1
+    else:
+        print("Better luck next time!")
+
+
+
+
+def createHigherAndLowerButtons(back_card_location):
+    buttonx, buttony = back_card_location
+    x_increase = 50
+    y_decrease = 300
+    y_offset = 70
+    x1 = (buttonx - back_card_dimensions_fixed[0] / 2) + x_increase/2
+    y1 = (buttony - back_card_dimensions_fixed[1] / 2) + (y_decrease/2) - y_offset
+    x2 = (buttonx + back_card_dimensions_fixed[0] / 2) - x_increase/2
+    y2 = (buttony + back_card_dimensions_fixed[1] / 2) - (y_decrease/2) - y_offset
+
+    higher_button = canvas.create_rectangle(x1, y1, x2, y2, fill="black", outline="white")
+
+    higher_text = canvas.create_text((x1+x2)/2, (y1+y2)/2, text="HIGHER", font=("Arial", 20), fill="white")
+
+
+    lower_y1 = y1 + 2*y_offset
+    lower_y2 = y2 + 2*y_offset
+
+
+
+    lower_button = canvas.create_rectangle(x1, lower_y1, x2, lower_y2, fill="black", outline="white")
+
+    lower_text = canvas.create_text((x1+x2)/2, (lower_y1+lower_y2)/2, text="LOWER", font=("Arial", 20), fill="white")
+
+    canvas.tag_bind(higher_button, "<Button-1>", lambda event : handleUserGuess(True))
+    canvas.tag_bind(lower_button, "<Button-1>", lambda event : handleUserGuess(False))
+
+    canvas.tag_bind(higher_text, "<Button-1>", lambda event : handleUserGuess(True))
+    canvas.tag_bind(lower_text, "<Button-1>", lambda event : handleUserGuess(False))
+
+
+
+
+
+
+def continueExecution(deck, back_card_location):
+    present_card(deck)
+    createHigherAndLowerButtons(back_card_location)
+
+
+
+def setUpGame(deck):
+    global back_card_dimensions_fixed
+
+    back_card_dimensions_fixed, back_card_location = create_back_card()
+    shuffle_deck(deck)
+    canvas.after(1000, lambda: continueExecution(deck, back_card_location))
+
+    canvas.pack()
 
 
 def play():
-    print("Lets play")
+    global ready
+    global deck
     canvas.delete("all")
 
-    doBuildup()
+    # doBuildup()
 
-    
+    deck = Deck(settings[0], settings[1], settings[2])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ready = False
+    setUpGame(deck)
 
 
 
@@ -332,21 +416,7 @@ canvas.pack()
 
 window.mainloop() 
 
-deck = Deck(settings[0], settings[1], settings[2])
 
-
-
-
-print("Let's go!")
-time.sleep(1)
-print("3")
-time.sleep(1)
-print("2")
-time.sleep(1)
-print("1")
-
-
-deck.shuffle()
 last_value = deck.getTopCard().value
 deck.showTopCard()
 
