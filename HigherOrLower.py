@@ -228,6 +228,54 @@ def on_closing():
 
 
 
+def doBuildup():
+    lets_go_text = canvas.create_text(width/2,height/2, text="Let's go!", anchor="center",fill="white",font=font.Font(family="Arial", size=150))
+    
+    countdown = 3
+
+    def update_countdown(i):
+        if i == countdown + 1:
+            canvas.after(1000, update_countdown, i - 2)  # Call update_countdown again after 1 second
+        elif i == -1:
+            canvas.delete(lets_go_text)
+        else:
+            canvas.itemconfig(lets_go_text, text=f"{i+1}")
+            canvas.after(1000, update_countdown, i - 1)  # Call update_countdown again after 1 second
+
+    update_countdown(countdown+1)  # Start the countdown from 3
+
+
+
+
+
+def play():
+    print("Lets play")
+    canvas.delete("all")
+
+    doBuildup()
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 showRules()
@@ -237,8 +285,14 @@ window.protocol("WM_DELETE_WINDOW", on_closing)
 
 
 
+
+
+
+
+
 def on_play(event):
-    print("Play button clicked!")
+    reset_cursor(event)
+    play()
 
 
 image = Image.open("play_button.png") 
